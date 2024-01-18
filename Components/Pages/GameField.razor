@@ -1,0 +1,366 @@
+@page "/gamefield"
+@rendermode InteractiveServer
+
+@if (!inizialized)
+{
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
+    </div>
+}
+else
+{
+    @if (gameOver)
+    {
+        @if (gameWin)
+        {
+            <div class="alert alert-success" role="alert">
+                You won!
+            </div>
+        }
+        else 
+        {
+            <div class="alert alert-danger" role="alert">
+                You lost!
+            </div>
+        }
+    }
+    else 
+    {
+        <div class="alert alert-success" role="alert">
+            @GameClassificationString in progress!
+        </div>
+    }
+    <div class="grid">
+        @foreach (var square in _shuffledSquares)
+        {
+            <div id="@square.Id" class="@square.Class" @onclick="(() => OnClick(square))" @oncontextmenu="(() => OnRightClick(square))" @oncontextmenu:preventDefault="true">
+                @if(square.IsRevealed && square.Type == GameGridSquareType.Number && square.AdjacentMineCount > 0)
+                {
+                    <div>@square.AdjacentMineCount</div>
+                }
+            </div>
+        }
+    </div>
+    <div>Flags left: <span>@FlagsLeft</span></div>
+
+    <div class="buttonRow">
+        <button class="btn btn-primary" @onclick="(() => ResetGame())">Reset Game</button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int TotalMines { get; set; } = 20;
+    private int _totalMines = 20;
+
+    [Parameter]
+    public int GridWidth { get; set; } = 10;
+    private int _gridWidth = 10;
+
+    bool gameOver = false;
+    bool gameWin = false;
+    bool inizialized = false;
+
+    private List<GameGridSquare> _shuffledSquares = new List<GameGridSquare>();
+
+    private int usedFlags = 0;
+    private int FlagsLeft { get { return (TotalMines != 0) ? TotalMines - usedFlags : 0; } }
+    private int TotalSquares { get { return (GridWidth != 0) ? GridWidth * GridWidth : 0; } }
+    private int ReveledSquares { get { return _shuffledSquares.Where(x => x.IsRevealed).Count(); } }
+
+    private string GameClassificationString { get { return TotalMines == 10 ? "Easy game" : TotalMines == 20 ? "Medium game" : "Hard game"; } }
+
+    // methods
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate asynchronous loading to demonstrate streaming rendering
+        await Task.Delay(500);
+
+        // Shuffle the squares
+        ResetGame();
+
+        Console.WriteLine("Gamefield initialized");
+
+        @* foreach (var square in _shuffledSquares)
+        {
+            Console.WriteLine($"{square.Id}: {square.Type}, class: {square.Class}");
+        } *@
+
+        inizialized = true;
+    }
+
+    public void ResetGame()
+    {
+        gameOver = false;
+        gameWin = false;
+
+        usedFlags = 0;
+
+        _shuffledSquares = GetShuffledSquareList(TotalMines, TotalSquares);
+
+        foreach (var square in _shuffledSquares)
+        {
+            square.IsRevealed = false;
+            square.IsFlagged = false;
+            square.IsChecked = false;
+            square.AdjacentMineCount = 0;
+        }
+
+        // Count adjacent mines
+        CountAdjacentMines(_shuffledSquares, GridWidth);
+    }
+
+    private List<GameGridSquare> GetShuffledSquareList(int totalMines, int totalSquares)
+    {
+        List<GameGridSquare> list = new List<GameGridSquare>();
+        
+        // Initialize the mines
+        for (int i = 0; i < totalMines; i++)
+        {
+            list.Add(new GameGridSquare() { Id = list.Count, Type = GameGridSquareType.Mine, IsRevealed = false });
+        }
+        // Initialize the squares
+        for (int i = 0; i < totalSquares - totalMines; i++)
+        {
+            list.Add(new GameGridSquare() { Id = list.Count, Type = GameGridSquareType.Empty, IsRevealed = false });
+        }
+
+        list = list.OrderBy(x => Guid.NewGuid()).ToList();
+        foreach (var square in list)
+        {
+            square.Id = list.IndexOf(square);
+        }
+        return list;
+    }
+
+    private void CountAdjacentMines(List<GameGridSquare> gridSquares, int gridWidth)
+    {
+        foreach (var square in gridSquares)
+        {
+            int adjacentMines = 0;
+            if (square.Type == GameGridSquareType.Mine)
+            {
+                continue;
+            }
+            // check left
+            if (square.Id % gridWidth != 0)
+            {
+                if (gridSquares[square.Id - 1].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            // check right
+            if (square.Id % gridWidth != gridWidth - 1)
+            {
+                if (gridSquares[square.Id + 1].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            // check top
+            if (square.Id >= gridWidth)
+            {
+                if (gridSquares[square.Id - gridWidth].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            // check bottom
+            if (square.Id < gridSquares.Count - gridWidth)
+            {
+                if (gridSquares[square.Id + gridWidth].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            // check top left
+            if (square.Id % gridWidth != 0 && square.Id >= gridWidth)
+            {
+                if (gridSquares[square.Id - gridWidth - 1].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            // check top right
+            if (square.Id % gridWidth != gridWidth - 1 && square.Id >= gridWidth)
+            {
+                if (gridSquares[square.Id - gridWidth + 1].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            // check bottom left
+            if (square.Id % gridWidth != 0 && square.Id < gridSquares.Count - gridWidth)
+            {
+                if (gridSquares[square.Id + gridWidth - 1].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            // check bottom right
+            if (square.Id % gridWidth != gridWidth - 1 && square.Id < gridSquares.Count - gridWidth)
+            {
+                if (gridSquares[square.Id + gridWidth + 1].Type == GameGridSquareType.Mine)
+                {
+                    adjacentMines++;
+                }
+            }
+            if (adjacentMines > 0)
+            {
+                square.Type = GameGridSquareType.Number;
+                square.AdjacentMineCount = adjacentMines;
+            }
+        }
+    }
+
+    private void CheckNeighbours(GameGridSquare square, List<GameGridSquare> gridSquares, int gridWidth)
+    {
+        Console.WriteLine($"Check neighbours: square: ID {square.Id} Type: {square.Type} AdjCount: {square.AdjacentMineCount} Isrevealed: {square.IsRevealed}");
+
+        // check left
+        if (square.Id % gridWidth != 0)
+        {
+            OnClick(gridSquares[square.Id - 1]);
+        }
+        // check right
+        if (square.Id % gridWidth != gridWidth - 1)
+        {
+            OnClick(gridSquares[square.Id + 1]);
+        }
+        // check top
+        if (square.Id >= gridWidth)
+        {
+            OnClick(gridSquares[square.Id - gridWidth]);
+        }
+        // check bottom
+        if (square.Id < gridSquares.Count - gridWidth)
+        {
+            OnClick(gridSquares[square.Id + gridWidth]);
+        }
+        // check top left
+        if (square.Id % gridWidth != 0 && square.Id >= gridWidth)
+        {
+            OnClick(gridSquares[square.Id - gridWidth - 1]);
+        }
+        // check top right
+        if (square.Id % gridWidth != gridWidth - 1 && square.Id >= gridWidth)
+        {
+            OnClick(gridSquares[square.Id - gridWidth + 1]);
+        }
+        // check bottom left
+        if (square.Id % gridWidth != 0 && square.Id < gridSquares.Count - gridWidth)
+        {
+            OnClick(gridSquares[square.Id + gridWidth - 1]);
+        }
+        // check bottom right
+        if (square.Id % gridWidth != gridWidth - 1 && square.Id < gridSquares.Count - gridWidth)
+        {
+            OnClick(gridSquares[square.Id + gridWidth + 1]);
+        }
+    }
+
+    private void EndGame(bool win)
+    {
+        gameOver = true;
+        gameWin = win;
+        foreach (var item in _shuffledSquares)
+        {
+            item.IsRevealed = true;
+        }
+    }
+
+    private void OnClick(GameGridSquare square)
+    {
+        if (square.IsRevealed || square.IsFlagged || square.IsChecked || gameOver)
+        {
+            return;
+        }
+
+        square.IsRevealed = true;
+        Console.WriteLine($"OnClick: square: ID {square.Id} Type: {square.Type} AdjCount: {square.AdjacentMineCount} Isrevealed: {square.IsRevealed}");
+
+        if (square.Type == GameGridSquareType.Mine)
+        {
+            EndGame(false);
+            return;
+        }
+        if (ReveledSquares == TotalSquares - TotalMines)
+        {
+            EndGame(true);
+            return;
+        }
+
+        if (square.Type == GameGridSquareType.Empty)
+        {
+            CheckNeighbours(square, _shuffledSquares, GridWidth);
+        }
+    }
+
+    private void OnRightClick(GameGridSquare square)
+    {
+        if (square.IsRevealed || gameOver || FlagsLeft == 0)
+        {
+            return;
+        }
+
+        if (!square.IsFlagged && !square.IsChecked)
+        {
+            square.IsFlagged = true;
+            usedFlags++;
+        }
+        else if (square.IsFlagged)
+        {
+            square.IsFlagged = false;
+            square.IsChecked = true;
+            usedFlags--;
+        }
+        else
+        {
+            square.IsFlagged = false;
+            square.IsChecked = false;
+        }
+    }
+
+    private string GameClassification()
+    {
+        if (TotalSquares == 0)
+        {
+            return "No game";
+        }
+
+        if (TotalMines / TotalSquares <= 0.1)
+        {
+            return "Easy game";
+        }
+        else if (TotalMines / TotalSquares <= 0.2)
+        {
+            return "Medium game";
+        }
+        else
+        {
+            return "Hard game";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Console.WriteLine("OnParametersSetAsync");
+
+        if (_gridWidth != GridWidth)
+        {
+            _gridWidth = GridWidth;
+            ResetGame();
+            Console.WriteLine("GridWidth parameter has changed");
+        }
+
+        if (_totalMines != TotalMines)
+        {
+            _totalMines = TotalMines;
+            ResetGame();
+            Console.WriteLine("TotalMines parameter has changed");
+        }
+
+        await base.OnParametersSetAsync();
+    }
+}

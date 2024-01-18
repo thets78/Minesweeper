@@ -1,0 +1,19 @@
+.container {
+    width: 500px;
+    /* background-color: rgb(192, 226, 43); */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.gamesetup {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    margin-bottom: 50px;
+    width: 100%;
+}
