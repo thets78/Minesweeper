@@ -1,5 +1,6 @@
 @page "/gamefield"
 @rendermode InteractiveServer
+@implements IDisposable
 
 @if (!inizialized)
 {
@@ -27,7 +28,7 @@ else
     else 
     {
         <div class="alert alert-success" role="alert">
-            @GameClassificationString in progress!
+            @GameClassificationString in progress @clock
         </div>
     }
     <div class="grid">
@@ -60,6 +61,7 @@ else
     bool gameOver = false;
     bool gameWin = false;
     bool inizialized = false;
+    Timer? clockTimer;
 
     private List<GameGridSquare> _shuffledSquares = new List<GameGridSquare>();
 
@@ -67,10 +69,17 @@ else
     private int FlagsLeft { get { return (TotalMines != 0) ? TotalMines - usedFlags : 0; } }
     private int TotalSquares { get { return (GridWidth != 0) ? GridWidth * GridWidth : 0; } }
     private int ReveledSquares { get { return _shuffledSquares.Where(x => x.IsRevealed).Count(); } }
-
     private string GameClassificationString { get { return TotalMines == 10 ? "Easy game" : TotalMines == 20 ? "Medium game" : "Hard game"; } }
+    private string clock = "00:00:00";
+    private DateTime startTime = DateTime.Now;
 
     // methods
+    void IDisposable.Dispose()
+    {
+        clockTimer?.Dispose();
+        clockTimer = null;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         // Simulate asynchronous loading to demonstrate streaming rendering
@@ -108,6 +117,15 @@ else
 
         // Count adjacent mines
         CountAdjacentMines(_shuffledSquares, GridWidth);
+        startTime = DateTime.Now;
+        clockTimer = new System.Threading.Timer((_) =>
+        {
+            UpdateClock();
+            InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }, null, 0, 250);        
     }
 
     private List<GameGridSquare> GetShuffledSquareList(int totalMines, int totalSquares)
@@ -268,6 +286,8 @@ else
         {
             item.IsRevealed = true;
         }
+        clockTimer?.Dispose();
+        clockTimer = null;
     }
 
     private void OnClick(GameGridSquare square)
@@ -299,12 +319,12 @@ else
 
     private void OnRightClick(GameGridSquare square)
     {
-        if (square.IsRevealed || gameOver || FlagsLeft == 0)
+        if (square.IsRevealed || gameOver)
         {
             return;
         }
 
-        if (!square.IsFlagged && !square.IsChecked)
+        if (!square.IsFlagged && !square.IsChecked && usedFlags < TotalMines)
         {
             square.IsFlagged = true;
             usedFlags++;
@@ -362,5 +382,12 @@ else
         }
 
         await base.OnParametersSetAsync();
+    }
+
+
+    private void UpdateClock()
+    {
+        TimeSpan diffTime = DateTime.Now - startTime;
+        clock = diffTime.ToString(@"hh\:mm\:ss");
     }
 }
