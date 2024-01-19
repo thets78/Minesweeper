@@ -9,7 +9,7 @@ public enum GameGridSquareType
 
 public class GameGridSquare
 {
-    public int Id { get; set; }
+    public int Id { get; set; } = 0;
     public GameGridSquareType Type { get; set; } = GameGridSquareType.Empty;
     public bool IsRevealed { get; set; } = false;
     public bool IsFlagged { get; set; } = false;
