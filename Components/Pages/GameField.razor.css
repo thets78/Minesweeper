@@ -62,7 +62,7 @@ div {
 .mine {
     width: 40px;
     height: 40px;
-    background-image: url("pngMine.png");
+    background-image: url("mine.png");
     background-color: #dcd6bc;
     background-position: center;
     background-repeat: no-repeat;
@@ -76,7 +76,7 @@ div {
 .flag {
     width: 40px;
     height: 40px;
-    background-image: url("pngFlag.png");
+    background-image: url("flag.png");
     background-color: #dcd6bc;
     background-position: center;
     background-repeat: no-repeat;
@@ -90,7 +90,7 @@ div {
 .checked {
     width: 40px;
     height: 40px;
-    background-image: url("pngChecked.png");
+    background-image: url("checked.png");
     background-color: #dcd6bc;
     background-position: center;
     background-repeat: no-repeat;
