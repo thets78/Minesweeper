@@ -1,0 +1,5 @@
+{
+    "appService.preDeployTask": "publish-release",
+    "appService.deploySubpath": "bin/Release/net8.0/publish",
+    "appService.defaultWebAppToDeploy": "/subscriptions/7eaf6452-ce3d-466d-b438-f6b83d193445/resourceGroups/MineSweeper/providers/Microsoft.Web/sites/MinesweeperServer"
+}
