@@ -4,14 +4,20 @@
     display: flex;
     flex-wrap: wrap;
     background-color: #dcd6bc;
-    margin-top: 20px;
+    margin-top: 10px;
     margin-bottom: 10px;
-    border: 10px solid #8d8a7f;
+    border: 5px solid #8d8a7f;
     box-sizing: content-box;
 }
 
-div {
+.grid div {
     font-size: 20px;
+    text-align: center;
+    font-family: monospace;
+}
+
+div {
+    font-size: 16px;
     text-align: center;
     font-family: monospace;
 }

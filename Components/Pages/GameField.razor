@@ -15,13 +15,13 @@ else
         @if (gameWin)
         {
             <div class="alert alert-success" role="alert">
-                Game over<br>You won!
+                Game over - You won!
             </div>
         }
         else 
         {
             <div class="alert alert-danger" role="alert">
-                Game over<br>You lost!
+                Game over - You lost!
             </div>
         }
     }
@@ -324,7 +324,7 @@ else
             return;
         }
 
-        if (!square.IsFlagged && !square.IsChecked && usedFlags < TotalMines)
+        if (!square.IsFlagged /*&& !square.IsChecked*/ && usedFlags < TotalMines)
         {
             square.IsFlagged = true;
             usedFlags++;
@@ -332,7 +332,7 @@ else
         else if (square.IsFlagged)
         {
             square.IsFlagged = false;
-            square.IsChecked = true;
+            //square.IsChecked = true;
             usedFlags--;
         }
         else
