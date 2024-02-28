@@ -14,6 +14,42 @@ public enum GameType
     Hard
 }
 
+public static class GameTypeExtensions
+{
+    public static string ToFriendlyString(this GameType gameType)
+    {
+        return gameType switch
+        {
+            GameType.Easy => "Easy",
+            GameType.Medium => "Medium",
+            GameType.Hard => "Hard",
+            _ => "Unknown"
+        };
+    }
+}
+public class GameGrid
+{
+    public int GridWidth { get; set; }
+    public int GridHeight { get; set; }
+    public int MineCount { get; set; }
+    public GameType GameType { get; set; }
+
+    public static GameGrid SetupGame(GameType gameType)
+    {
+        switch (gameType)
+        {
+            case GameType.Easy:
+                return new GameGrid{ GridWidth = 10, GridHeight=10, MineCount = 10, GameType = GameType.Easy};
+            case GameType.Medium:
+                return new GameGrid{ GridWidth = 15, GridHeight=10, MineCount = 30, GameType = GameType.Medium};
+            case GameType.Hard:
+                return new GameGrid{ GridWidth = 20, GridHeight=10, MineCount = 60, GameType = GameType.Hard};
+            default:
+                return new GameGrid{ GridWidth = 10, GridHeight=10, MineCount = 10, GameType = GameType.Easy};
+        }
+    }
+}
+
 public class GameGridSquare
 {
     public int Id { get; set; } = 0;

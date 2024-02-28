@@ -5,65 +5,41 @@
 
 <div class="container">
     <div class="gamesetup">
-        @if (gameType == GameType.Easy)
+        @if (gameGrid.GameType == GameType.Easy)
         {
-            <button class="btn btn-primary active" @onclick="(() => StartEasyGame())">Easy</button>
+            <button class="btn btn-secondary">Easy</button>
         }
         else
         {
-            <button class="btn btn-secondary" @onclick="(() => StartEasyGame())">Easy</button>
+            <button class="btn btn-primary active" @onclick="(() => StartGame(GameType.Easy))">Easy</button>
         }
-        @if (gameType == GameType.Medium)
+        @if (gameGrid.GameType == GameType.Medium)
         {
-            <button class="btn btn-primary active" @onclick="(() => StartMediumGame())">Medium</button>
-        }
-        else
-        {
-            <button class="btn btn-secondary" @onclick="(() => StartMediumGame())">Medium</button>
-        }
-        @if (gameType == GameType.Hard)
-        {
-            <button class="btn btn-primary active" @onclick="(() => StartHardGame())">Hard</button>
+            <button class="btn btn-secondary">Medium</button>
         }
         else
         {
-            <button class="btn btn-secondary" @onclick="(() => StartHardGame())">Hard</button>
+            <button class="btn btn-primary active" @onclick="(() => StartGame(GameType.Medium))">Medium</button>
+        }
+        @if (gameGrid.GameType == GameType.Hard)
+        {
+            <button class="btn btn-secondary">Hard</button>
+        }
+        else
+        {
+            <button class="btn btn-primary active" @onclick="(() => StartGame(GameType.Hard))">Hard</button>
         }
     </div>
-    <GameField GridWidth="@gridWidth" GridHeight="@gridHeight" TotalMines="@mines" GameType="@gameType"/>
+    <GameField GameGrid="@gameGrid" />
 </div>
 <div class="footerspace">&nbsp;</div>
 
 @code {
-    private int mines = 10;
-    private int gridWidth = 10;
-    private int gridHeight = 10;
-    private GameType gameType = GameType.Easy;
+    private GameGrid gameGrid = GameGrid.SetupGame(GameType.Easy);
 
-    private void StartEasyGame()
+    private void StartGame(GameType gameType)
     {
-        gameType = GameType.Easy;
-        mines = 10;
-        gridWidth = 10;
-        gridHeight = 10;
-        Console.WriteLine("StartEasyGame: Reset game");
-    }
-
-    private void StartMediumGame()
-    {
-        gameType = GameType.Medium;
-        mines = 20;
-        gridWidth = 15;
-        gridHeight = 10;
-        Console.WriteLine("StartMediumGame: Reset game");
-    }
-
-    private void StartHardGame()
-    {
-        gameType = GameType.Hard;
-        mines = 30;
-        gridWidth = 20;
-        gridHeight = 10;
-        Console.WriteLine("StartHardGame: Reset game");
+        gameGrid = GameGrid.SetupGame(gameType);
+        Console.WriteLine("StartGame: Reset game");
     }
 }
