@@ -58,6 +58,8 @@ else
 
     [Parameter] public int GridHeight { get; set; } = 10;
     private int _gridHeight = 10;
+    [Parameter] public GameType GameType { get; set; }
+    private GameType _gameType;
 
     bool gameOver = false;
     bool gameWin = false;
@@ -101,15 +103,15 @@ else
 
     private string GetAdditionalGridClass()
     {
-        if (GridWidth == 0 || GridHeight == 0)
+        if (_gameType == GameType.Easy)
         {
             return "";
         }
-        if (TotalMines == 20)
+        if (_gameType == GameType.Medium)
         {
             return "medium";
         }
-        if (TotalMines == 30)
+        if (_gameType == GameType.Hard)
         {
             return "hard";
         }
@@ -395,7 +397,7 @@ else
          if (_gridHeight != GridHeight)
         {
             Console.WriteLine("--- OnParametersSetAsync ----------------------------------------------------------------");
-            Console.WriteLine($"GridWidth: {_gridWidth}, GridHeight: {_gridHeight}, TotalMines: {_totalMines}");
+            Console.WriteLine($"GridWidth: {_gridWidth}, GridHeight: {_gridHeight}, TotalMines: {_totalMines}, GameType: {_gameType}");
             _gridHeight = GridHeight;
             ResetGame();
         }
@@ -403,9 +405,16 @@ else
         if (_totalMines != TotalMines)
         {
             Console.WriteLine("--- OnParametersSetAsync ----------------------------------------------------------------");
-            Console.WriteLine($"GridWidth: {_gridWidth}, GridHeight: {_gridHeight}, TotalMines: {_totalMines}");
+            Console.WriteLine($"GridWidth: {_gridWidth}, GridHeight: {_gridHeight}, TotalMines: {_totalMines}, GameType: {_gameType}");
             _totalMines = TotalMines;
             ResetGame();
+        }
+
+        if (_gameType != GameType)
+        {
+            Console.WriteLine("--- OnParametersSetAsync ----------------------------------------------------------------");
+            Console.WriteLine($"GridWidth: {_gridWidth}, GridHeight: {_gridHeight}, TotalMines: {_totalMines}, GameType: {_gameType}");
+            _gameType = GameType;
         }
 
         await base.OnParametersSetAsync();
