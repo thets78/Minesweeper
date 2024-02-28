@@ -7,6 +7,13 @@ public enum GameGridSquareType
     Number
 }
 
+public enum GameType 
+{
+    Easy,
+    Medium,
+    Hard
+}
+
 public class GameGridSquare
 {
     public int Id { get; set; } = 0;

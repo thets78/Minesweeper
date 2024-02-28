@@ -1,6 +1,6 @@
 .grid {
-    height: 400px;
     width: 400px;
+    height: 400px;
     display: flex;
     flex-wrap: wrap;
     background-color: #dcd6bc;
@@ -8,6 +8,16 @@
     margin-bottom: 10px;
     border: 5px solid #8d8a7f;
     box-sizing: content-box;
+}
+
+.grid.medium {
+    width: 600px;
+    height: 400px;
+}
+
+.grid.hard {
+    width: 800px;
+    height: 400px;
 }
 
 .grid div {

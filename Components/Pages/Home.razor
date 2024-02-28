@@ -5,7 +5,7 @@
 
 <div class="container">
     <div class="gamesetup">
-        @if (mines == 10)
+        @if (gameType == GameType.Easy)
         {
             <button class="btn btn-primary active" @onclick="(() => StartEasyGame())">Easy</button>
         }
@@ -13,7 +13,7 @@
         {
             <button class="btn btn-secondary" @onclick="(() => StartEasyGame())">Easy</button>
         }
-        @if (mines == 20)
+        @if (gameType == GameType.Medium)
         {
             <button class="btn btn-primary active" @onclick="(() => StartMediumGame())">Medium</button>
         }
@@ -21,7 +21,7 @@
         {
             <button class="btn btn-secondary" @onclick="(() => StartMediumGame())">Medium</button>
         }
-        @if (mines == 30)
+        @if (gameType == GameType.Hard)
         {
             <button class="btn btn-primary active" @onclick="(() => StartHardGame())">Hard</button>
         }
@@ -30,27 +30,40 @@
             <button class="btn btn-secondary" @onclick="(() => StartHardGame())">Hard</button>
         }
     </div>
-    <GameField GridWidth="10" TotalMines="@mines" />
+    <GameField GridWidth="@gridWidth" GridHeight="@gridHeight" TotalMines="@mines" />
 </div>
 <div class="footerspace">&nbsp;</div>
+
 @code {
     private int mines = 10;
+    private int gridWidth = 10;
+    private int gridHeight = 10;
+    private GameType gameType = GameType.Easy;
 
     private void StartEasyGame()
     {
+        gameType = GameType.Easy;
         mines = 10;
+        gridWidth = 10;
+        gridHeight = 10;
         Console.WriteLine("StartEasyGame: Reset game");
     }
 
     private void StartMediumGame()
     {
+        gameType = GameType.Medium;
         mines = 20;
+        gridWidth = 15;
+        gridHeight = 10;
         Console.WriteLine("StartMediumGame: Reset game");
     }
 
     private void StartHardGame()
     {
+        gameType = GameType.Hard;
         mines = 30;
+        gridWidth = 20;
+        gridHeight = 10;
         Console.WriteLine("StartHardGame: Reset game");
     }
 }
