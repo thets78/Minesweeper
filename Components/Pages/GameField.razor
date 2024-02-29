@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @implements IDisposable
 
+<div class="container">
+<div class="row justify-content-center">
 @if (!initialized)
 {
     <div class="spinner-border text-primary" role="status">
@@ -10,48 +12,63 @@
 }
 else
 {
-    @if (gameOver)
-    {
-        @if (gameWin)
-        {
-            <div class="alert alert-success" role="alert">
-                Game over - You won!
-            </div>
-        }
-        else 
-        {
-            <div class="alert alert-danger" role="alert">
-                Game over - You lost!
-            </div>
-        }
-    }
-    else 
-    {
-        <div class="alert alert-success" role="alert">
-            @GameClassification() in progress @clock
-        </div>
-    }
-    <div class="grid @GetAdditionalGridClass()">
+    <div class="game__grid @GetAdditionalGridClass()" style="@GridStyle()">
         @foreach (var square in _shuffledSquares)
         {
-            <div id="@square.Id" class="@square.Class" @onclick="(() => OnClick(square))" @oncontextmenu="(() => OnRightClick(square))" @oncontextmenu:preventDefault="true">
+            <div id="@square.Id" class="@square.Class" style="@GridCellStyle()" @onclick="(() => OnClick(square))" @oncontextmenu="(() => OnRightClick(square))" @oncontextmenu:preventDefault="true">
                 @if(square.IsRevealed && square.Type == GameGridSquareType.Number && square.AdjacentMineCount > 0)
                 {
-                    <div>@square.AdjacentMineCount</div>
+                    <div style="font-size: calc(max(10px, 1vw));">@square.AdjacentMineCount</div>
                 }
             </div>
         }
     </div>
-    <div>Flags left: <span>@FlagsLeft</span></div>
+    @if(_game.GameState == GameState.InProgress)
+    {
+        <div class="row justify-content-center">
+            <div class="col">
+                <span class="me-2">Flags left:</span>
+                <span class="me-2">@FlagsLeft</span>
+            </div>
+            <div class="col">
+                <span class="me-2">Time:</span>
+                <span class="me-2">@clock</span>
+            </div>
+        </div>
 
-    <div class="buttonRow">
-        <button class="btn btn-primary" @onclick="(() => ResetGame())">Reset Game</button>
-    </div>
+        <div class="row justify-content-center mt-2 mb-2">
+            <button class="btn col-6 btn-primary" @onclick="(() => ResetGame())">Reset Game</button>
+        </div>
+    }
+    @if(_game.GameState == GameState.Won)
+    {
+        <div class="alert alert-success" role="alert">
+            <div class="d-flex p-2 justify-content-center">
+                <span class="d-flex me-3">You won!</span>
+                <span>@_game.Time.ToString(@"hh\:mm\:ss")</span>
+            </div>
+        </div>
+    }
+    @if(_game.GameState == GameState.Lost)
+    {
+        <div class="alert alert-danger" role="alert">
+            <div class="d-flex p-2 justify-content-center">
+                <span class="d-flex me-3">You lost!</span>
+                <span>@_game.Time.ToString(@"hh\:mm\:ss")</span>
+            </div>
+        </div>
+    }
 }
+</div>
+    
+</div>
+
 
 @code {
-    [Parameter] public GameGrid? GameGrid { get; set; }
-    private GameGrid _gameGrid = GameGrid.SetupGame(GameType.Easy);
+    [Parameter] public Game? Game { get; set; }
+    private Game _game = Game.SetupGame(GameType.Easy);
+    [Parameter] public EventCallback<GameState> OnGameStateChanged { get; set; }
+    [Parameter] public EventCallback<Game> OnGameChanged { get; set; }
 
     bool gameOver = false;
     bool gameWin = false;
@@ -61,8 +78,8 @@ else
     private List<GameGridSquare> _shuffledSquares = new List<GameGridSquare>();
 
     private int usedFlags = 0;
-    private int FlagsLeft { get { return (_gameGrid.MineCount != 0) ? _gameGrid.MineCount - usedFlags : 0; } }
-    private int TotalSquares { get { return (_gameGrid.GridWidth != 0) ? _gameGrid.GridWidth * _gameGrid.GridHeight : 0; } }
+    private int FlagsLeft { get { return (_game.MineCount != 0) ? _game.MineCount - usedFlags : 0; } }
+    private int TotalSquares { get { return (_game.GridWidth != 0) ? _game.GridWidth * _game.GridHeight : 0; } }
     private int ReveledSquares { get { return _shuffledSquares.Where(x => x.IsRevealed).Count(); } }
     private string clock = "00:00:00";
     private DateTime startTime = DateTime.Now;
@@ -79,62 +96,70 @@ else
         // Simulate asynchronous loading to demonstrate streaming rendering
         // await Task.Delay(500);
 
-        if (GameGrid != null)
+        if (Game != null)
         {
-            _gameGrid = GameGrid;
+            _game = Game;
         }
         else
         {
-            _gameGrid = GameGrid.SetupGame(GameType.Easy);
+            _game = Game.SetupGame(GameType.Easy);
         }
 
         // Shuffle the squares
-        ResetGame();
+        await ResetGame();
 
         Console.WriteLine("Gamefield initialized");
 
         initialized = true;
-
-        await Task.CompletedTask;
     }
 
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
 
-        if (GameGrid != null && _gameGrid.GameType != GameGrid?.GameType)
+        if (Game != null && (_game.GameType != Game?.GameType || _game != Game))
         {
-            _gameGrid = GameGrid ?? GameGrid.SetupGame(GameType.Easy);
-            Console.WriteLine("--- OnParametersSetAsync ----------------------------------------------------------------");
-            Console.WriteLine($"GridWidth: {_gameGrid.GridWidth}, GridHeight: {_gameGrid.GridHeight}, TotalMines: {_gameGrid.MineCount}, GameType: {_gameGrid.GameType}");
-            ResetGame();
+            _game = Game!;
+            Console.WriteLine("--- GameField - OnParametersSetAsync ----------------------------------------------------");
+            Console.WriteLine($"GridWidth: {_game.GridWidth}, GridHeight: {_game.GridHeight}, TotalMines: {_game.MineCount}, GameType: {_game.GameType}");
+            await ResetGame();
         }
+    }
+
+    private string GridStyle()
+    {
+        return $"width: {_game.GridWidth * 2}vw; height: {_game.GridHeight * 2}vw; min-width: {_game.GridWidth * 18}px; min-height: {_game.GridHeight * 18}px;";
+    }
+
+    private string GridCellStyle()
+    {
+        return $"width: 2vw; height: 2vw; min-width: 18px; min-height: 18px;";
     }
 
     private string GetAdditionalGridClass()
     {
-        if (_gameGrid.GameType == GameType.Easy)
+        if (_game.GameType == GameType.Easy)
         {
-            return "";
+            return $"";
         }
-        if (_gameGrid.GameType == GameType.Medium)
+        if (_game.GameType == GameType.Medium)
         {
             return "medium";
         }
-        if (_gameGrid.GameType == GameType.Hard)
+        if (_game.GameType == GameType.Hard)
         {
             return "hard";
         }
         return "";
     }
-    public void ResetGame()
+    public async Task ResetGame()
     {
         gameOver = false;
         gameWin = false;
 
         usedFlags = 0;
 
-        _shuffledSquares = GetShuffledSquareList(_gameGrid.MineCount, TotalSquares);
+        _shuffledSquares = GetShuffledSquareList(_game.MineCount, TotalSquares);
 
         foreach (var square in _shuffledSquares)
         {
@@ -145,7 +170,7 @@ else
         }
 
         // Count adjacent mines
-        CountAdjacentMines(_shuffledSquares, _gameGrid.GridWidth);
+        CountAdjacentMines(_shuffledSquares, _game.GridWidth);
         startTime = DateTime.Now;
         clockTimer = new System.Threading.Timer((_) =>
         {
@@ -154,7 +179,9 @@ else
             {
                 StateHasChanged();
             });
-        }, null, 0, 250);        
+        }, null, 0, 250);
+
+        await OnGameStateChanged.InvokeAsync(GameState.InProgress);
     }
 
     private List<GameGridSquare> GetShuffledSquareList(int totalMines, int totalSquares)
@@ -264,54 +291,59 @@ else
         }
     }
 
-    private void CheckNeighbours(GameGridSquare square, List<GameGridSquare> gridSquares, int gridWidth)
+    private async Task CheckNeighbours(GameGridSquare square, List<GameGridSquare> gridSquares, int gridWidth)
     {
         // check left
         if (square.Id % gridWidth != 0)
         {
-            OnClick(gridSquares[square.Id - 1]);
+            await OnClick(gridSquares[square.Id - 1]);
         }
         // check right
         if (square.Id % gridWidth != gridWidth - 1)
         {
-            OnClick(gridSquares[square.Id + 1]);
+            await OnClick(gridSquares[square.Id + 1]);
         }
         // check top
         if (square.Id >= gridWidth)
         {
-            OnClick(gridSquares[square.Id - gridWidth]);
+            await OnClick(gridSquares[square.Id - gridWidth]);
         }
         // check bottom
         if (square.Id < gridSquares.Count - gridWidth)
         {
-            OnClick(gridSquares[square.Id + gridWidth]);
+            await OnClick(gridSquares[square.Id + gridWidth]);
         }
         // check top left
         if (square.Id % gridWidth != 0 && square.Id >= gridWidth)
         {
-            OnClick(gridSquares[square.Id - gridWidth - 1]);
+            await OnClick(gridSquares[square.Id - gridWidth - 1]);
         }
         // check top right
         if (square.Id % gridWidth != gridWidth - 1 && square.Id >= gridWidth)
         {
-            OnClick(gridSquares[square.Id - gridWidth + 1]);
+            await OnClick(gridSquares[square.Id - gridWidth + 1]);
         }
         // check bottom left
         if (square.Id % gridWidth != 0 && square.Id < gridSquares.Count - gridWidth)
         {
-            OnClick(gridSquares[square.Id + gridWidth - 1]);
+            await OnClick(gridSquares[square.Id + gridWidth - 1]);
         }
         // check bottom right
         if (square.Id % gridWidth != gridWidth - 1 && square.Id < gridSquares.Count - gridWidth)
         {
-            OnClick(gridSquares[square.Id + gridWidth + 1]);
+            await OnClick(gridSquares[square.Id + gridWidth + 1]);
         }
     }
 
-    private void EndGame(bool win)
+    private async Task EndGame(bool win)
     {
         gameOver = true;
         gameWin = win;
+
+        _game.GameState = win ? GameState.Won : GameState.Lost;
+        _game.Time = DateTime.Now - startTime;
+        await OnGameChanged.InvokeAsync(_game);
+
         foreach (var item in _shuffledSquares)
         {
             item.IsRevealed = true;
@@ -320,7 +352,7 @@ else
         clockTimer = null;
     }
 
-    private void OnClick(GameGridSquare square)
+    private async Task OnClick(GameGridSquare square)
     {
         if (square.IsRevealed || square.IsFlagged || square.IsChecked || gameOver)
         {
@@ -332,18 +364,18 @@ else
 
         if (square.Type == GameGridSquareType.Mine)
         {
-            EndGame(false);
+            await EndGame(false);
             return;
         }
-        if (ReveledSquares == TotalSquares - _gameGrid.MineCount)
+        if (ReveledSquares == TotalSquares - _game.MineCount)
         {
-            EndGame(true);
+            await EndGame(true);
             return;
         }
 
         if (square.Type == GameGridSquareType.Empty)
         {
-            CheckNeighbours(square, _shuffledSquares, _gameGrid.GridWidth);
+            await CheckNeighbours(square, _shuffledSquares, _game.GridWidth);
         }
     }
 
@@ -354,7 +386,7 @@ else
             return;
         }
 
-        if (!square.IsFlagged /*&& !square.IsChecked*/ && usedFlags < _gameGrid.MineCount)
+        if (!square.IsFlagged /*&& !square.IsChecked*/ && usedFlags < _game.MineCount)
         {
             square.IsFlagged = true;
             usedFlags++;
@@ -374,15 +406,15 @@ else
 
     private string GameClassification()
     {
-        if (_gameGrid.GameType == GameType.Easy)
+        if (_game.GameType == GameType.Easy)
         {
             return "Easy game";
         }
-        else if (_gameGrid.GameType == GameType.Medium)
+        else if (_game.GameType == GameType.Medium)
         {
             return "Medium game";
         }
-        else if(_gameGrid.GameType == GameType.Hard)
+        else if(_game.GameType == GameType.Hard)
         {
             return "Hard game";
         }

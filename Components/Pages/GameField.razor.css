@@ -1,127 +1,136 @@
-.grid {
-    width: 400px;
-    height: 400px;
-    display: flex;
-    flex-wrap: wrap;
-    background-color: #dcd6bc;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    border: 5px solid #8d8a7f;
-    box-sizing: content-box;
+.container {
+    font-size: calc(max(10px, 1vw));
 }
 
-.grid.medium {
-    width: 600px;
-    height: 400px;
+.game__grid {
+  display: flex;
+  flex-wrap: wrap;
+  background-color: #dcd6bc;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border: 5px solid #8d8a7f;
+  box-sizing: content-box;
+  padding: 0;
 }
 
-.grid.hard {
-    width: 800px;
-    height: 400px;
+.game__grid.medium {
+  padding: 0;
 }
 
-.grid div {
-    font-size: 20px;
-    text-align: center;
-    font-family: monospace;
+.game__grid.hard {
+  padding: 0;
+}
+
+.game__grid div {
+  /* font-size: min(10px, 2vh); */
+  font-size: calc(max(10px, 1vw));
+  text-align: center;
+  font-family: monospace;
 }
 
 div {
-    font-size: 16px;
-    text-align: center;
-    font-family: monospace;
+  /* font-size: 1em; */
+  font-size: calc(max(10px, 1vw));
+  text-align: center;
+  font-family: monospace;
 }
 
 .valid {
-    width: 40px;
-    height: 40px;
-    background-color: #dcd6bc;
-    border: 1px solid #bab7a9;
-    box-sizing: border-box;    
+  /* width: 40px;
+    height: 40px; */
+  background-color: #dcd6bc;
+  border: 1px solid #bab7a9;
+  box-sizing: border-box;
 }
 
 .number {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 40px;
-    height: 40px;
-    background-color: #dcd6bc;
-    border: 1px solid #bab7a9;
-    box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* width: 40px;
+    height: 40px; */
+  background-color: #dcd6bc;
+  border: 1px solid #bab7a9;
+  box-sizing: border-box;
 }
 
 .number.green {
-    color: green;
-    font-weight: bold;
+  color: green;
+  font-weight: bold;
 }
 
 .number.blue {
-    color: blue;
-    font-weight: bold;
+  color: blue;
+  font-weight: bold;
 }
 
 .number.red {
-    color: red;
-    font-weight: bold;
+  color: red;
+  font-weight: bold;
 }
 
 .hidden {
-    width: 40px;
-    height: 40px;
-    background-color: #dcd6bc;
-    border: 5px solid;
-    border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
-    box-sizing: border-box;    
+  /* width: 40px;
+    height: 40px; */
+  background-color: #dcd6bc;
+  border: 0.25em solid;
+  border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
+  box-sizing: border-box;
 }
 
 .mine {
-    width: 40px;
-    height: 40px;
-    background-image: url("mine.png");
-    background-color: #dcd6bc;
-    background-position: center;
-    background-repeat: no-repeat;
-    /* background-size: cover; */
-    background-size: 20px 20px;
-    border: 5px solid;
-    border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
-    box-sizing: border-box;
+  /* width: 40px;
+    height: 40px; */
+  background-image: url("mine.png");
+  background-color: #dcd6bc;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* background-size: cover; */
+  /* background-size: 20px 20px; */
+  background-size: 80% 80%;
+  border: 0.25em solid;
+  border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
+  box-sizing: border-box;
 }
 
 .flag {
-    width: 40px;
-    height: 40px;
-    background-image: url("flag.png");
-    background-color: #dcd6bc;
-    background-position: center;
-    background-repeat: no-repeat;
-    /* background-size: cover; */
-    background-size: 20px 20px;
-    border: 5px solid;
-    border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
-    box-sizing: border-box;
+  /* width: 40px;
+    height: 40px; */
+  background-image: url("flag.png");
+  background-color: #dcd6bc;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* background-size: cover; */
+  /* background-size: 20px 20px; */
+  background-size: 80% 80%;
+  border: 0.25em solid;
+  border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
+  box-sizing: border-box;
 }
 
 .checked {
-    width: 40px;
-    height: 40px;
-    background-image: url("checked.png");
-    background-color: #dcd6bc;
-    background-position: center;
-    background-repeat: no-repeat;
-    /* background-size: cover; */
-    background-size: 20px 20px;
-    border: 5px solid;
-    border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
-    box-sizing: border-box;
+  /* width: 40px;
+    height: 40px; */
+  background-image: url("checked.png");
+  background-color: #dcd6bc;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* background-size: cover; */
+  background-size: 80% 80%;
+  border: 0.25em solid;
+  border-color: #f5f3eb #bab7a9 #bab7a9 #fff9db;
+  box-sizing: border-box;
 }
 
 .buttonRow {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    margin-top: 10px;;
-    margin-bottom: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.btn {
+    font-size: calc(max(10px, 1vw));
 }

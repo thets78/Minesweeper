@@ -1,0 +1,118 @@
+@rendermode InteractiveServer
+
+<div class="container">
+
+    <div class="row justify-content-center">
+
+        <div class="d-flex flex-column justify-content-center align-items-center">
+            <h3>High Scores</h3>
+        </div>
+        @if (HighScores == null)
+        {
+            <p>Loading...</p>
+        }
+        else
+        {
+            <div class="row justify-content-center">
+
+                @if (_isEntered || _game.GameState != GameState.Won)
+                {
+                    if (HighScores.Count == 0)
+                    {
+                        <div class="d-flex flex-column justify-content-center align-items-center">
+                            <p>No high scores yet</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Name</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var highScore in HighScores)
+                                {
+                                    <tr>
+                                        <td>@GetRank(highScore)</td>
+                                        <td>@highScore.Name</td>
+                                        <td>@highScore.Time.ToString(@"hh\:mm\:ss")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                }
+                @if (!_isEntered && _game.GameState == GameState.Won)
+                {
+                    <p>Enter your name to add your high score</p>
+                    <div class="col">
+                        <input type="text" class="form-control ,e-4" @bind="_name" />
+                        <button class="btn btn-primary mt-2" @onclick="AddHighScore">Add High Score</button>
+                    </div>
+                }
+            </div>
+
+        }
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public Game? Game { get; set; }
+    private Game _game = new Game();
+    [Parameter] public List<HighScore> HighScores { get; set; } = new List<HighScore>();
+    [Parameter] public EventCallback<List<HighScore>> HighScoresChanged { get; set; }
+
+    private string _name = "";
+    private bool _isEntered = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        _game = Game ?? new Game();
+        _isEntered = false;
+        _name = "";
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if (Game != null && (_game.GameType != Game?.GameType || _game != Game))
+        {
+            _game = Game!;
+            HighScores = await HighScore.GetHighScoresAsync(_game.GameType);
+            _isEntered = false;
+            _name = "";
+        }
+    }
+
+    private int GetRank(HighScore highScore)
+    {
+        if (HighScores.Count == 0)
+        {
+            return 1;
+        }
+        else
+        {
+            return HighScores.IndexOf(highScore) + 1;
+        }
+    }
+
+    private async Task AddHighScore()
+    {
+        await HighScore.SaveHighScoreAsync(new HighScore
+            {
+                Name = _name.Length > 0 ? _name : "unknown",
+                Time = _game.Time,
+                GameType = _game.GameType
+            });
+        HighScores = await HighScore.GetHighScoresAsync(_game.GameType);
+        _isEntered = true;
+    }
+}

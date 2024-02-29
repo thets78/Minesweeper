@@ -4,42 +4,87 @@
 <PageTitle>Minesweeper</PageTitle>
 
 <div class="container">
-    <div class="gamesetup">
-        @if (gameGrid.GameType == GameType.Easy)
+    <div class="row justify-content-center">
+        @if (game.GameType == GameType.Easy)
         {
-            <button class="btn btn-secondary">Easy</button>
+            <button class="btn col-3 btn-warning ms-2 me-2">Easy</button>
         }
         else
         {
-            <button class="btn btn-primary active" @onclick="(() => StartGame(GameType.Easy))">Easy</button>
+            <button class="btn col-3 btn-secondary ms-2 me-2 active" @onclick="(() => StartGame(GameType.Easy))">Easy</button>
         }
-        @if (gameGrid.GameType == GameType.Medium)
+        @if (game.GameType == GameType.Medium)
         {
-            <button class="btn btn-secondary">Medium</button>
-        }
-        else
-        {
-            <button class="btn btn-primary active" @onclick="(() => StartGame(GameType.Medium))">Medium</button>
-        }
-        @if (gameGrid.GameType == GameType.Hard)
-        {
-            <button class="btn btn-secondary">Hard</button>
+            <button class="btn col-3 btn-warning ms-2 me-2">Medium</button>
         }
         else
         {
-            <button class="btn btn-primary active" @onclick="(() => StartGame(GameType.Hard))">Hard</button>
+            <button class="btn col-3 btn-secondary ms-2 me-2 active"
+                @onclick="(() => StartGame(GameType.Medium))">Medium</button>
+        }
+        @if (game.GameType == GameType.Hard)
+        {
+            <button class="btn col-3 btn-warning ms-2 me-2">Hard</button>
+        }
+        else
+        {
+            <button class="btn col-3 btn-secondary ms-2 me-2 active" @onclick="(() => StartGame(GameType.Hard))">Hard</button>
         }
     </div>
-    <GameField GameGrid="@gameGrid" />
+    @if (game.GameState == GameState.Lost)
+    {
+        <div class="d-flex flex-column justify-content-center align-items-center mt-2">
+            <h2>Game Over</h2>
+            <button class="btn btn-primary" @onclick="(() => StartGame(game.GameType))">Try again</button>
+        </div>
+    }
+    else if (game.GameState == GameState.Won)
+    {
+        <div class="d-flex flex-column justify-content-center align-items-center mt-2">
+            <h2>You won!</h2>
+            <button class="btn btn-primary" @onclick="(() => StartGame(game.GameType))">Play again</button>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column justify-content-center align-items-center mt-2">
+            <h2>Minesweeper</h2>
+            <span class="btn">Click on a cell to reveal it. Right-click to flag a cell as a mine.</span>
+        </div>
+    }
+    <div class="row justify-content-between mt-2">
+        <div class="col align-items-center">
+            <GameField Game="@game" OnGameStateChanged="@UpdateGameState" OnGameChanged="@UpdateGame" />
+        </div>
+        <div class="col pt-2">
+            <Highscore Game="@game" />
+        </div>
+    </div>
 </div>
 <div class="footerspace">&nbsp;</div>
 
 @code {
-    private GameGrid gameGrid = GameGrid.SetupGame(GameType.Easy);
+    private Game game = Game.SetupGame(GameType.Easy);
 
     private void StartGame(GameType gameType)
     {
-        gameGrid = GameGrid.SetupGame(gameType);
+        game = Game.SetupGame(gameType);
         Console.WriteLine("StartGame: Reset game");
+    }
+
+    private void UpdateGameState(GameState gameState)
+    {
+        Console.WriteLine("--- Home - UpdateGameState --------------------------------------------------------------");
+        Console.WriteLine("UpdateGameState: " + gameState);
+
+        game.GameState = gameState;
+    }
+
+    private void UpdateGame(Game newGame)
+    {
+        Console.WriteLine("--- Home - UpdateGame -------------------------------------------------------------------");
+        Console.WriteLine("UpdateGame: " + newGame);
+
+        game = newGame;
     }
 }

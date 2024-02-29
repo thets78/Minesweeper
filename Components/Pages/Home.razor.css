@@ -1,21 +1,9 @@
 .container {
-    width: 450px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    height: 100%;
+    font-size: calc(max(10px, 1vw));
 }
 
-.gamesetup {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    width: 100%;
+.btn {
+    font-size: calc(max(10px, 1vw));
 }
 
 .footerspace {

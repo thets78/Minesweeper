@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Minesweeper;
 
 public enum GameGridSquareType
@@ -7,11 +9,19 @@ public enum GameGridSquareType
     Number
 }
 
-public enum GameType 
+public enum GameType
 {
     Easy,
     Medium,
     Hard
+}
+
+public enum GameState 
+{
+    NotStarted,
+    InProgress,
+    Won,
+    Lost
 }
 
 public static class GameTypeExtensions
@@ -27,25 +37,32 @@ public static class GameTypeExtensions
         };
     }
 }
-public class GameGrid
+public class Game
 {
-    public int GridWidth { get; set; }
-    public int GridHeight { get; set; }
-    public int MineCount { get; set; }
-    public GameType GameType { get; set; }
+    public int GridWidth { get; set; } = 10;
+    public int GridHeight { get; set; } = 10;
+    public int MineCount { get; set; } = 10;
+    public GameType GameType { get; set; } = GameType.Easy;
+    public TimeSpan Time { get; set; } = TimeSpan.Zero;
+    public GameState GameState { get; set; } = GameState.NotStarted;
 
-    public static GameGrid SetupGame(GameType gameType)
+    public override string ToString()
+    {
+        return $"{GameType.ToFriendlyString()} - {Time} - {GameState} - {GridWidth}x{GridHeight} - {MineCount} mines";
+    }
+
+    public static Game SetupGame(GameType gameType)
     {
         switch (gameType)
         {
             case GameType.Easy:
-                return new GameGrid{ GridWidth = 10, GridHeight=10, MineCount = 10, GameType = GameType.Easy};
+                return new Game { GridWidth = 10, GridHeight = 10, MineCount = 10, GameType = GameType.Easy, GameState = GameState.NotStarted};
             case GameType.Medium:
-                return new GameGrid{ GridWidth = 15, GridHeight=10, MineCount = 30, GameType = GameType.Medium};
+                return new Game { GridWidth = 15, GridHeight = 12, MineCount = 30, GameType = GameType.Medium, GameState = GameState.NotStarted };
             case GameType.Hard:
-                return new GameGrid{ GridWidth = 20, GridHeight=10, MineCount = 60, GameType = GameType.Hard};
+                return new Game { GridWidth = 20, GridHeight = 14, MineCount = 60, GameType = GameType.Hard, GameState = GameState.NotStarted };
             default:
-                return new GameGrid{ GridWidth = 10, GridHeight=10, MineCount = 10, GameType = GameType.Easy};
+                return new Game { GridWidth = 10, GridHeight = 10, MineCount = 10, GameType = GameType.Easy, GameState = GameState.NotStarted };
         }
     }
 }
@@ -71,11 +88,11 @@ public class GameGridSquare
                 }
                 else if (AdjacentMineCount > 0)
                 {
-                    if (AdjacentMineCount ==  1)
+                    if (AdjacentMineCount == 1)
                         return $"number green";
                     else if (AdjacentMineCount == 2)
                         return $"number blue";
-                    else 
+                    else
                         return $"number red";
                 }
                 else
@@ -101,3 +118,43 @@ public class GameGridSquare
         }
     }
 }
+
+public class HighScore
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public TimeSpan Time { get; set; }
+    public GameType GameType { get; set; }
+    public static async Task<List<HighScore>> GetHighScoresAsync(GameType gameType)
+    {
+        var fileName = $"highscores_{gameType}.json";
+        try {
+            if (!File.Exists(fileName))
+                File.Create(fileName).Close();
+            var json = await File.ReadAllTextAsync(fileName);
+            return JsonSerializer.Deserialize<List<HighScore>>(json) ?? new List<HighScore>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return new List<HighScore>();
+        }
+    }
+    public static async Task SaveHighScoreAsync(HighScore highScore)
+    {
+        var fileName = $"highscores_{highScore.GameType}.json";
+        try {
+            List<HighScore> highScores = await GetHighScoresAsync(highScore.GameType);
+            highScores.Add(highScore);
+            highScores = highScores.OrderBy(x => x.Time).Take(10).ToList();
+            highScores = highScores.Where(x => x.Time != TimeSpan.Zero).ToList();
+            var json = JsonSerializer.Serialize(highScores);
+            File.WriteAllText(fileName, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+}
+
