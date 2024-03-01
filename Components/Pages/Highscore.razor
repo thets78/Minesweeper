@@ -79,6 +79,7 @@
 
         _game = Game ?? new Game();
         _isEntered = false;
+        _isWaiting = false;
         _name = "";
     }
 
@@ -90,6 +91,7 @@
         {
             _game = Game!;
             _isEntered = false;
+            _isWaiting = false;
             _name = "";
         }
     }
@@ -122,5 +124,6 @@
             });
         HighScores = await HighScore.GetHighScoresAsync(_game.GameType);
         _isEntered = true;
+        _isWaiting = false;
     }
 }
