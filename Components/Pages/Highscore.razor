@@ -71,6 +71,7 @@
 
     private string _name = "";
     private bool _isEntered = false;
+    private bool _isWaiting = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -88,7 +89,6 @@
         if (Game != null && (_game.GameType != Game?.GameType || _game != Game))
         {
             _game = Game!;
-            @* HighScores = await HighScore.GetHighScoresAsync(_game.GameType); *@
             _isEntered = false;
             _name = "";
         }
@@ -108,6 +108,11 @@
 
     private async Task AddHighScore()
     {
+        if (_isWaiting)
+        {
+            return;
+        }
+        _isWaiting = true;
         await HighScore.SaveHighScoreAsync(new HighScore
             {
                 Name = _name.Length > 0 ? _name : "unknown",
