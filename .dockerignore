@@ -22,5 +22,6 @@
 **/secrets.dev.yaml
 **/values.dev.yaml
 **/highscores_*.json
+**/*portainer.yml
 LICENSE
 README.md
