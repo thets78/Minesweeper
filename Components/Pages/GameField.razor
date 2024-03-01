@@ -2,17 +2,18 @@
 @rendermode InteractiveServer
 @implements IDisposable
 
+
 <div class="container">
-<div class="row justify-content-center">
-@if (!initialized)
-{
-    <div class="spinner-border text-primary" role="status">
-        <span class="sr-only">Loading...</span>
-    </div>
-}
-else
-{
-    <div class="game__grid @GetAdditionalGridClass()" style="@GridStyle()">
+    <div class="row justify-content-center">
+    @if (Game == null)
+    {
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    }
+    else
+    {
+        <div class="game__grid @GetAdditionalGridClass()" style="@GridStyle()">
         @foreach (var square in _shuffledSquares)
         {
             <div id="@square.Id" class="@square.Class" style="@GridCellStyle()" @onclick="(() => OnClick(square))" @oncontextmenu="(() => OnRightClick(square))" @oncontextmenu:preventDefault="true">
@@ -22,10 +23,10 @@ else
                 }
             </div>
         }
-    </div>
-    @if(_game.GameState == GameState.InProgress)
-    {
-        <div class="row justify-content-center">
+        </div>
+        <div class="row justify-content-center mt-2 mb-2">
+        @if(Game?.GameState == GameState.InProgress)
+        {
             <div class="col">
                 <span class="me-2">Flags left:</span>
                 <span class="me-2">@FlagsLeft</span>
@@ -34,52 +35,41 @@ else
                 <span class="me-2">Time:</span>
                 <span class="me-2">@clock</span>
             </div>
+        }
         </div>
-
         <div class="row justify-content-center mt-2 mb-2">
-            <button class="btn col-6 btn-primary" @onclick="(() => ResetGame())">Reset Game</button>
-        </div>
+        @if(Game?.GameState == GameState.NotStarted)
+        {
+            <button class="btn col-4 me-2 btn-primary" @onclick="(() => StartGame())">Start Game</button>
+        }
+        @if (Game?.GameState == GameState.InProgress)
+        {
+            <button class="btn col-4 me-2 btn-primary" @onclick="(() => StartGame(true))">Reset Game</button>
+            <button class="btn col-4 ms-2 btn-danger" @onclick="(() => EndGame(false))">Stop Game</button>
+        }
+        </div>    
     }
-    @if(_game.GameState == GameState.Won)
-    {
-        <div class="alert alert-success" role="alert">
-            <div class="d-flex p-2 justify-content-center">
-                <span class="d-flex me-3">You won!</span>
-                <span>@_game.Time.ToString(@"hh\:mm\:ss")</span>
-            </div>
-        </div>
-    }
-    @if(_game.GameState == GameState.Lost)
-    {
-        <div class="alert alert-danger" role="alert">
-            <div class="d-flex p-2 justify-content-center">
-                <span class="d-flex me-3">You lost!</span>
-                <span>@_game.Time.ToString(@"hh\:mm\:ss")</span>
-            </div>
-        </div>
-    }
-}
-</div>
-    
+    </div>
+        
 </div>
 
 
 @code {
     [Parameter] public Game? Game { get; set; }
-    private Game _game = Game.SetupGame(GameType.Easy);
     [Parameter] public EventCallback<GameState> OnGameStateChanged { get; set; }
     [Parameter] public EventCallback<Game> OnGameChanged { get; set; }
 
-    bool gameOver = false;
-    bool gameWin = false;
-    bool initialized = false;
-    Timer? clockTimer;
+    private bool gameOver = false;
+    private bool gameWin = false;
+    private Timer? clockTimer;
+    private Guid _gameId;
+    private GameState _gameState;
 
     private List<GameGridSquare> _shuffledSquares = new List<GameGridSquare>();
 
     private int usedFlags = 0;
-    private int FlagsLeft { get { return (_game.MineCount != 0) ? _game.MineCount - usedFlags : 0; } }
-    private int TotalSquares { get { return (_game.GridWidth != 0) ? _game.GridWidth * _game.GridHeight : 0; } }
+    private int FlagsLeft { get { return (Game?.MineCount != 0) ? Game!.MineCount - usedFlags : 0; } }
+    private int TotalSquares { get { return (Game?.GridWidth != 0) ? Game!.GridWidth * Game.GridHeight : 0; } }
     private int ReveledSquares { get { return _shuffledSquares.Where(x => x.IsRevealed).Count(); } }
     private string clock = "00:00:00";
     private DateTime startTime = DateTime.Now;
@@ -87,48 +77,49 @@ else
     // methods
     void IDisposable.Dispose()
     {
-        clockTimer?.Dispose();
-        clockTimer = null;
+        DisposeTimer();
     }
-
     protected override async Task OnInitializedAsync()
     {
-        // Simulate asynchronous loading to demonstrate streaming rendering
-        // await Task.Delay(500);
-
-        if (Game != null)
-        {
-            _game = Game;
-        }
-        else
-        {
-            _game = Game.SetupGame(GameType.Easy);
-        }
-
-        // Shuffle the squares
-        await ResetGame();
-
+        await base.OnInitializedAsync();
         Console.WriteLine("Gamefield initialized");
-
-        initialized = true;
     }
 
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
 
-        if (Game != null && (_game.GameType != Game?.GameType || _game != Game))
+        if (Game != null && _gameId != Game?.Id )
         {
-            _game = Game!;
             Console.WriteLine("--- GameField - OnParametersSetAsync ----------------------------------------------------");
-            Console.WriteLine($"GridWidth: {_game.GridWidth}, GridHeight: {_game.GridHeight}, TotalMines: {_game.MineCount}, GameType: {_game.GameType}");
-            await ResetGame();
+            Console.WriteLine($"Game setup: GUID: {Game!.Id}");
+            Console.WriteLine($"Game setup: GameType: {Game!.GameType}, GridWidth: {Game!.GridWidth}, GridHeight: {Game!.GridHeight}, TotalMines: {Game!.MineCount}");
+            _gameId = Game.Id;
+            _gameState = GameState.NotStarted;
+            PrepareGame(Game.GameType);
+            if (_gameState == GameState.NotStarted && Game.GameState == GameState.RequestStart)
+            {
+                await StartGame();
+                return;
+            }
+        }
+        if (Game != null && _gameState != Game.GameState && _gameId == Game.Id)
+        {
+            Console.WriteLine("--- GameField - OnParametersSetAsync ----------------------------------------------------");
+            Console.WriteLine($"Game state changed: GUID: {Game!.Id} GameState: {_gameState} -> {Game.GameState}");
+            
+            if (_gameState == GameState.NotStarted && Game.GameState == GameState.RequestStart)
+            {
+                await StartGame();
+                return;
+            }
+            _gameState = Game.GameState;
         }
     }
 
     private string GridStyle()
     {
-        return $"width: {_game.GridWidth * 2}vw; height: {_game.GridHeight * 2}vw; min-width: {_game.GridWidth * 18}px; min-height: {_game.GridHeight * 18}px;";
+        return $"width: {Game?.GridWidth * 2}vw; height: {Game?.GridHeight * 2}vw; min-width: {Game?.GridWidth * 18}px; min-height: {Game?.GridHeight * 18}px;";
     }
 
     private string GridCellStyle()
@@ -138,28 +129,29 @@ else
 
     private string GetAdditionalGridClass()
     {
-        if (_game.GameType == GameType.Easy)
+        if (Game?.GameType == GameType.Easy)
         {
             return $"";
         }
-        if (_game.GameType == GameType.Medium)
+        if (Game?.GameType == GameType.Medium)
         {
             return "medium";
         }
-        if (_game.GameType == GameType.Hard)
+        if (Game?.GameType == GameType.Hard)
         {
             return "hard";
         }
         return "";
     }
-    public async Task ResetGame()
+
+    public void PrepareGame(GameType gameType)
     {
+        Console.WriteLine("--- GameField - PrepareGame -------------------------------------------------------------");
         gameOver = false;
         gameWin = false;
 
         usedFlags = 0;
-
-        _shuffledSquares = GetShuffledSquareList(_game.MineCount, TotalSquares);
+        _shuffledSquares = GetShuffledSquareList(Game!.MineCount, TotalSquares);
 
         foreach (var square in _shuffledSquares)
         {
@@ -168,9 +160,20 @@ else
             square.IsChecked = false;
             square.AdjacentMineCount = 0;
         }
-
         // Count adjacent mines
-        CountAdjacentMines(_shuffledSquares, _game.GridWidth);
+        CountAdjacentMines(_shuffledSquares, Game!.GridWidth);
+    }
+
+    private async Task StartGame(bool restart = false)
+    {
+        Console.WriteLine("--- GameField - StartGame ---------------------------------------------------------------");
+        if (restart)
+        {
+            Console.WriteLine("Game restarted -> PrepareGame");
+            PrepareGame(Game!.GameType);
+        }
+        Console.WriteLine($"Game started: GameType: {Game?.GameType}, GridWidth: {Game?.GridWidth}, GridHeight: {Game?.GridHeight}, TotalMines: {Game?.MineCount}");
+
         startTime = DateTime.Now;
         clockTimer = new System.Threading.Timer((_) =>
         {
@@ -183,10 +186,35 @@ else
 
         await OnGameStateChanged.InvokeAsync(GameState.InProgress);
     }
+    private async Task EndGame(bool win)
+    {
+        Console.WriteLine("--- GameField - EndGame -----------------------------------------------------------------");
+        Console.WriteLine($"Game ended: GameType: {Game?.GameType}, GridWidth: {Game?.GridWidth}, GridHeight: {Game?.GridHeight}, TotalMines: {Game?.MineCount}, Win: {win}");
+        gameOver = true;
+        gameWin = win;
+
+        Game!.GameState = win ? GameState.Won : GameState.Lost;
+        Game!.Time = DateTime.Now - startTime;
+
+        foreach (var item in _shuffledSquares)
+        {
+            item.IsRevealed = true;
+        }
+        DisposeTimer();
+
+        await OnGameChanged.InvokeAsync(Game);
+    }
+
+    public void DisposeTimer()
+    {
+        Console.WriteLine("--- GameField - DisposeTimer ------------------------------------------------------------");
+        clockTimer?.Dispose();
+        clockTimer = null;
+    }
 
     private List<GameGridSquare> GetShuffledSquareList(int totalMines, int totalSquares)
     {
-        Console.WriteLine("--- GetShuffledSquareList ---------------------------------------------------------------");
+        Console.WriteLine("--- GameField - GetShuffledSquareList ---------------------------------------------------");
         Console.WriteLine($"TotalMines: {totalMines}, TotalSquares: {totalSquares}");
 
         List<GameGridSquare> list = new List<GameGridSquare>();
@@ -291,7 +319,7 @@ else
         }
     }
 
-    private async Task CheckNeighbours(GameGridSquare square, List<GameGridSquare> gridSquares, int gridWidth)
+    private async Task CheckNeighbors(GameGridSquare square, List<GameGridSquare> gridSquares, int gridWidth)
     {
         // check left
         if (square.Id % gridWidth != 0)
@@ -335,26 +363,15 @@ else
         }
     }
 
-    private async Task EndGame(bool win)
-    {
-        gameOver = true;
-        gameWin = win;
-
-        _game.GameState = win ? GameState.Won : GameState.Lost;
-        _game.Time = DateTime.Now - startTime;
-        await OnGameChanged.InvokeAsync(_game);
-
-        foreach (var item in _shuffledSquares)
-        {
-            item.IsRevealed = true;
-        }
-        clockTimer?.Dispose();
-        clockTimer = null;
-    }
 
     private async Task OnClick(GameGridSquare square)
     {
-        if (square.IsRevealed || square.IsFlagged || square.IsChecked || gameOver)
+        if (Game?.GameState != GameState.InProgress)
+        {
+            return;
+        }
+
+        if (square.IsRevealed || square.IsFlagged || square.IsChecked || gameOver)
         {
             return;
         }
@@ -367,7 +384,7 @@ else
             await EndGame(false);
             return;
         }
-        if (ReveledSquares == TotalSquares - _game.MineCount)
+        if (ReveledSquares == TotalSquares - Game!.MineCount)
         {
             await EndGame(true);
             return;
@@ -375,7 +392,7 @@ else
 
         if (square.Type == GameGridSquareType.Empty)
         {
-            await CheckNeighbours(square, _shuffledSquares, _game.GridWidth);
+            await CheckNeighbors(square, _shuffledSquares, Game!.GridWidth);
         }
     }
 
@@ -386,7 +403,7 @@ else
             return;
         }
 
-        if (!square.IsFlagged /*&& !square.IsChecked*/ && usedFlags < _game.MineCount)
+        if (!square.IsFlagged /*&& !square.IsChecked*/ && usedFlags < Game?.MineCount)
         {
             square.IsFlagged = true;
             usedFlags++;
@@ -406,15 +423,15 @@ else
 
     private string GameClassification()
     {
-        if (_game.GameType == GameType.Easy)
+        if (Game?.GameType == GameType.Easy)
         {
             return "Easy game";
         }
-        else if (_game.GameType == GameType.Medium)
+        else if (Game?.GameType == GameType.Medium)
         {
             return "Medium game";
         }
-        else if(_game.GameType == GameType.Hard)
+        else if(Game?.GameType == GameType.Hard)
         {
             return "Hard game";
         }

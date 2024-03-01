@@ -3,88 +3,136 @@
 
 <PageTitle>Minesweeper</PageTitle>
 
-<div class="container">
+@if (game != null)
+{
+
+    <div class="container">
     <div class="row justify-content-center">
         @if (game.GameType == GameType.Easy)
+            {
+                <button class="btn col-3 btn-warning ms-2 me-2">Easy</button>
+            }
+            else
+            {
+                <button class="btn col-3 btn-secondary ms-2 me-2 active"
+                    @onclick="(() => CreateGame(GameType.Easy))">Easy</button>
+            }
+            @if (game.GameType == GameType.Medium)
+            {
+                <button class="btn col-3 btn-warning ms-2 me-2">Medium</button>
+            }
+            else
+            {
+                <button class="btn col-3 btn-secondary ms-2 me-2 active"
+                    @onclick="(() => CreateGame(GameType.Medium))">Medium</button>
+            }
+            @if (game.GameType == GameType.Hard)
+            {
+                <button class="btn col-3 btn-warning ms-2 me-2">Hard</button>
+            }
+            else
+            {
+                <button class="btn col-3 btn-secondary ms-2 me-2 active"
+                    @onclick="(() => CreateGame(GameType.Hard))">Hard</button>
+            }
+        </div>
+        @if (game.GameState == GameState.NotStarted)
         {
-            <button class="btn col-3 btn-warning ms-2 me-2">Easy</button>
+            <div class="d-flex flex-column justify-content-center align-items-center mt-2">
+                <h2>Minesweeper</h2>
+                <span class="btn">Click "Start Game" to start the clock and activate the game.</span>
+            </div>
         }
-        else
+        @if (game.GameState == GameState.InProgress)
         {
-            <button class="btn col-3 btn-secondary ms-2 me-2 active" @onclick="(() => StartGame(GameType.Easy))">Easy</button>
+            <div class="d-flex flex-column justify-content-center align-items-center mt-2">
+                <h2>Minesweeper</h2>
+                <span class="btn">Click on a cell to reveal it. Right-click to flag a cell as a mine.</span>
+            </div>
         }
-        @if (game.GameType == GameType.Medium)
+        @if (game.GameState == GameState.Lost)
         {
-            <button class="btn col-3 btn-warning ms-2 me-2">Medium</button>
+            <div class="d-flex flex-column justify-content-center align-items-center mt-2">
+                <h2>Game Over</h2>
+                <span class="btn">Click on a cell to reveal it. Right-click to flag a cell as a mine.</span>
+            </div>
         }
-        else
+        @if (game.GameState == GameState.Won)
         {
-            <button class="btn col-3 btn-secondary ms-2 me-2 active"
-                @onclick="(() => StartGame(GameType.Medium))">Medium</button>
+            <div class="d-flex flex-column justify-content-center align-items-center mt-2">
+                <h2>You won!</h2>
+                <span class="btn">Click on a cell to reveal it. Right-click to flag a cell as a mine.</span>
+            </div>
         }
-        @if (game.GameType == GameType.Hard)
-        {
-            <button class="btn col-3 btn-warning ms-2 me-2">Hard</button>
-        }
-        else
-        {
-            <button class="btn col-3 btn-secondary ms-2 me-2 active" @onclick="(() => StartGame(GameType.Hard))">Hard</button>
-        }
+        <div class="row justify-content-between mt-2">
+            <div class="col align-items-center">
+                <GameField Game="@game" OnGameStateChanged="@UpdateGameState" OnGameChanged="@UpdateGame" />
+            </div>
+            <div class="col pt-2">
+                <Highscore Game="@game" HighScores="@highScores" />
+            </div>
+        </div>
+        <div class="row justify-content-between mt-2">
+            @if (game.GameState == GameState.Won)
+            {
+                <div class="alert alert-success" role="alert">
+                    <div class="d-flex p-2 justify-content-center">
+                        <span class="d-flex me-3">You won!</span>
+                        <span>@game.Time.ToString(@"hh\:mm\:ss")</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" @onclick="(() => CreateGame(game.GameType, true))">Play again</button>
+            }
+            @if (game.GameState == GameState.Lost)
+            {
+                <div class="alert alert-danger" role="alert">
+                    <div class="d-flex p-2 justify-content-center">
+                        <span class="d-flex me-3">You lost!</span>
+                        <span>@game.Time.ToString(@"hh\:mm\:ss")</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" @onclick="(() => CreateGame(game.GameType, true))">Try again</button>
+            }
+        </div>
     </div>
-    @if (game.GameState == GameState.Lost)
-    {
-        <div class="d-flex flex-column justify-content-center align-items-center mt-2">
-            <h2>Game Over</h2>
-            <button class="btn btn-primary" @onclick="(() => StartGame(game.GameType))">Try again</button>
-        </div>
-    }
-    else if (game.GameState == GameState.Won)
-    {
-        <div class="d-flex flex-column justify-content-center align-items-center mt-2">
-            <h2>You won!</h2>
-            <button class="btn btn-primary" @onclick="(() => StartGame(game.GameType))">Play again</button>
-        </div>
-    }
-    else
-    {
-        <div class="d-flex flex-column justify-content-center align-items-center mt-2">
-            <h2>Minesweeper</h2>
-            <span class="btn">Click on a cell to reveal it. Right-click to flag a cell as a mine.</span>
-        </div>
-    }
-    <div class="row justify-content-between mt-2">
-        <div class="col align-items-center">
-            <GameField Game="@game" OnGameStateChanged="@UpdateGameState" OnGameChanged="@UpdateGame" />
-        </div>
-        <div class="col pt-2">
-            <Highscore Game="@game" />
-        </div>
-    </div>
-</div>
-<div class="footerspace">&nbsp;</div>
+    <div class="footerspace">&nbsp;</div>
 
+}
 @code {
-    private Game game = Game.SetupGame(GameType.Easy);
+    private Game? game;
+    private List<HighScore> highScores = new List<HighScore>();
 
-    private void StartGame(GameType gameType)
+    protected override async Task OnInitializedAsync()
     {
-        game = Game.SetupGame(gameType);
-        Console.WriteLine("StartGame: Reset game");
+        await CreateGame(GameType.Easy);
     }
 
+    private async Task CreateGame(GameType gameType, bool autostart = false)
+    {
+        var newGame = Game.SetupGame(gameType);
+        Console.WriteLine("--- Home - CreateGame -------------------------------------------------------------------");
+        Console.WriteLine($"GUID: {newGame.Id}");
+        Console.WriteLine($"GameType: {newGame.GameType}");
+        highScores = await HighScore.GetHighScoresAsync(gameType);
+        if (autostart)
+        {
+            newGame.GameState = GameState.RequestStart;
+        }
+        game = newGame;
+    }
     private void UpdateGameState(GameState gameState)
     {
         Console.WriteLine("--- Home - UpdateGameState --------------------------------------------------------------");
+        Console.WriteLine($"GUID: {game?.Id}");
         Console.WriteLine("UpdateGameState: " + gameState);
-
-        game.GameState = gameState;
+        game!.GameState = gameState;
     }
 
     private void UpdateGame(Game newGame)
     {
         Console.WriteLine("--- Home - UpdateGame -------------------------------------------------------------------");
+        Console.WriteLine($"GUID: {game?.Id}");
         Console.WriteLine("UpdateGame: " + newGame);
-
         game = newGame;
     }
 }

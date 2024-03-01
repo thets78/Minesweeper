@@ -19,6 +19,7 @@ public enum GameType
 public enum GameState 
 {
     NotStarted,
+    RequestStart,
     InProgress,
     Won,
     Lost
@@ -45,6 +46,7 @@ public class Game
     public GameType GameType { get; set; } = GameType.Easy;
     public TimeSpan Time { get; set; } = TimeSpan.Zero;
     public GameState GameState { get; set; } = GameState.NotStarted;
+    public Guid Id { get; set; }
 
     public override string ToString()
     {
@@ -56,13 +58,13 @@ public class Game
         switch (gameType)
         {
             case GameType.Easy:
-                return new Game { GridWidth = 10, GridHeight = 10, MineCount = 10, GameType = GameType.Easy, GameState = GameState.NotStarted};
+                return new Game { GridWidth = 10, GridHeight = 10, MineCount = 10, GameType = GameType.Easy, GameState = GameState.NotStarted, Id = Guid.NewGuid()};
             case GameType.Medium:
-                return new Game { GridWidth = 15, GridHeight = 12, MineCount = 30, GameType = GameType.Medium, GameState = GameState.NotStarted };
+                return new Game { GridWidth = 15, GridHeight = 12, MineCount = 30, GameType = GameType.Medium, GameState = GameState.NotStarted, Id = Guid.NewGuid() };
             case GameType.Hard:
-                return new Game { GridWidth = 20, GridHeight = 14, MineCount = 60, GameType = GameType.Hard, GameState = GameState.NotStarted };
+                return new Game { GridWidth = 20, GridHeight = 14, MineCount = 60, GameType = GameType.Hard, GameState = GameState.NotStarted, Id = Guid.NewGuid() };
             default:
-                return new Game { GridWidth = 10, GridHeight = 10, MineCount = 10, GameType = GameType.Easy, GameState = GameState.NotStarted };
+                return new Game { GridWidth = 10, GridHeight = 10, MineCount = 10, GameType = GameType.Easy, GameState = GameState.NotStarted, Id = Guid.NewGuid() };
         }
     }
 }
@@ -125,9 +127,23 @@ public class HighScore
     public string Name { get; set; } = "";
     public TimeSpan Time { get; set; }
     public GameType GameType { get; set; }
+    public DateTime? Date { get; set; }
+    
     public static async Task<List<HighScore>> GetHighScoresAsync(GameType gameType)
     {
-        var fileName = $"highscores_{gameType}.json";
+        var fileName = $"/data/highscores_{gameType}.json";
+        var fileNameLocal = $"highscores_{gameType}.json";
+
+        try {
+            if (!File.Exists(fileName))
+                File.Create(fileName).Close();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            fileName = fileNameLocal;
+        }
+
         try {
             if (!File.Exists(fileName))
                 File.Create(fileName).Close();
@@ -142,7 +158,20 @@ public class HighScore
     }
     public static async Task SaveHighScoreAsync(HighScore highScore)
     {
-        var fileName = $"highscores_{highScore.GameType}.json";
+        var fileName = $"/data/highscores_{highScore.GameType}.json";
+        var fileNameLocal = $"highscores_{highScore.GameType}.json";
+
+        try {
+            if (!File.Exists(fileName))
+                File.Create(fileName).Close();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            fileName = fileNameLocal;
+        }
+
+
         try {
             List<HighScore> highScores = await GetHighScoresAsync(highScore.GameType);
             highScores.Add(highScore);

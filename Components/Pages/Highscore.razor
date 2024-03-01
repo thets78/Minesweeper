@@ -31,6 +31,7 @@
                                     <th>Rank</th>
                                     <th>Name</th>
                                     <th>Time</th>
+                                    <th>Date</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -40,6 +41,7 @@
                                         <td>@GetRank(highScore)</td>
                                         <td>@highScore.Name</td>
                                         <td>@highScore.Time.ToString(@"hh\:mm\:ss")</td>
+                                        <td>@highScore.Date?.ToString(@"dd.MM.yyyy HH:mm:ss")</td>
                                     </tr>
                                 }
                             </tbody>
@@ -86,7 +88,7 @@
         if (Game != null && (_game.GameType != Game?.GameType || _game != Game))
         {
             _game = Game!;
-            HighScores = await HighScore.GetHighScoresAsync(_game.GameType);
+            @* HighScores = await HighScore.GetHighScoresAsync(_game.GameType); *@
             _isEntered = false;
             _name = "";
         }
@@ -110,7 +112,8 @@
             {
                 Name = _name.Length > 0 ? _name : "unknown",
                 Time = _game.Time,
-                GameType = _game.GameType
+                GameType = _game.GameType,
+                Date = DateTime.Now
             });
         HighScores = await HighScore.GetHighScoresAsync(_game.GameType);
         _isEntered = true;
