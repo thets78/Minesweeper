@@ -9,6 +9,16 @@ public enum GameGridSquareType
     Number
 }
 
+// Minesweeper on Linux
+// Easy   =>  8x8  with 10 mines ==> 10 /  8*8  = 15.625% chance of mine
+// Medium => 16x16 with 40 mines ==> 40 / 16*16 = 15.625% chance of mine
+// Hard   => 16x30 with 99 mines ==> 99 / 16*30 = 20.625% chance of mine
+
+// My implementation
+// Easy   => 10x10 with 10 mines ==> 10 / 10*10 = 10.00% chance of mine
+// Medium => 15x12 with 30 mines ==> 30 / 15*12 = 16.67% chance of mine
+// Hard   => 20x14 with 60 mines ==> 60 / 20*14 = 21.43% chance of mine
+
 public enum GameType
 {
     Easy,
