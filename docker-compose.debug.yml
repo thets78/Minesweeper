@@ -11,7 +11,7 @@ services:
       args:
         - configuration=Debug
     ports:
-      - 5049:5049
+      - 5048:5048
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
     volumes:
