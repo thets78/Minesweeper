@@ -1,10 +1,21 @@
-using Minesweeper.Components;
+using MinesWeeper.Components;
+using MinesWeeper.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddHttpClient<MinesWeeperHighscoreApiClient>(client =>
+{
+    client.BaseAddress = new(builder.Configuration["MINESWEEPER_API_URL"] ?? "http://localhost");
+});
+
+builder.Services.AddHttpClient<UserServiceApiClient>(client =>
+{
+    client.BaseAddress = new(builder.Configuration["USERSERVICE_API_URL"] ?? "http://localhost");
+});
 
 var app = builder.Build();
 
@@ -19,6 +30,7 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()

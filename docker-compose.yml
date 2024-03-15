@@ -10,3 +10,5 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - 5049:5049
+    env_file:
+      - .env

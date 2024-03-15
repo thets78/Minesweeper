@@ -12,14 +12,20 @@
 *.user
 *.userosscache
 *.sln.docstates
-highscore*.json
-**/*portainer.yml
+*Prepare*.bat
+*Prepare*.sh
+*secret*
+*Jwt*.txt
+*.env
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
 # Mono auto generated files
 mono_crash.*
+
+# Secrets
+*secrets.*
 
 # Build results
 [Dd]ebug/

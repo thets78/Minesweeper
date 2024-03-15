@@ -1,14 +1,13 @@
 ﻿@page "/"
 @rendermode InteractiveServer
 
-<PageTitle>Minesweeper</PageTitle>
+<PageTitle>MinesWeeper</PageTitle>
 
 @if (game != null)
 {
-
     <div class="container">
-    <div class="row justify-content-center">
-        @if (game.GameType == GameType.Easy)
+        <div class="row justify-content-center">
+            @if (game.GameType == GameType.Easy)
             {
                 <button class="btn col-3 btn-warning ms-2 me-2">Easy</button>
             }
@@ -39,14 +38,14 @@
         @if (game.GameState == GameState.NotStarted)
         {
             <div class="d-flex flex-column justify-content-center align-items-center mt-2">
-                <h2>Minesweeper</h2>
+                <h2>MinesWeeper</h2>
                 <span class="btn">Click "Start Game" to start the clock and activate the game.</span>
             </div>
         }
         @if (game.GameState == GameState.InProgress)
         {
             <div class="d-flex flex-column justify-content-center align-items-center mt-2">
-                <h2>Minesweeper</h2>
+                <h2>MinesWeeper</h2>
                 <span class="btn">Click on a cell to reveal it. Right-click to flag a cell as a mine.</span>
             </div>
         }
@@ -69,7 +68,7 @@
                 <GameField Game="@game" OnGameStateChanged="@UpdateGameState" OnGameChanged="@UpdateGame" />
             </div>
             <div class="col pt-2">
-                <Highscore Game="@game" HighScores="@highScores" />
+                <Highscore CurrentGame="@game" />
             </div>
         </div>
         <div class="row justify-content-between mt-2">
@@ -96,24 +95,25 @@
         </div>
     </div>
     <div class="footerspace">&nbsp;</div>
-
 }
+
 @code {
     private Game? game;
-    private List<HighScore> highScores = new List<HighScore>();
-
     protected override async Task OnInitializedAsync()
     {
-        await CreateGame(GameType.Easy);
+        await base.OnInitializedAsync();
+
+        Console.WriteLine("--- Home - OnInitializedAsync -----------------------------------------------------------");
+        CreateGame(GameType.Easy);
     }
 
-    private async Task CreateGame(GameType gameType, bool autostart = false)
+    private void CreateGame(GameType gameType, bool autostart = false)
     {
         var newGame = Game.SetupGame(gameType);
         Console.WriteLine("--- Home - CreateGame -------------------------------------------------------------------");
         Console.WriteLine($"GUID: {newGame.Id}");
         Console.WriteLine($"GameType: {newGame.GameType}");
-        highScores = await HighScore.GetHighScoresAsync(gameType);
+
         if (autostart)
         {
             newGame.GameState = GameState.RequestStart;

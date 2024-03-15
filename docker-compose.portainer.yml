@@ -1,0 +1,19 @@
+
+version: '3.4'
+
+services:
+  minesweeper:
+    image: thets/minesweeper:latest
+    ports:
+      - 5048:5048
+    networks:
+      default:
+        ipv4_address: 192.168.99.96
+    restart: unless-stopped
+    env_file:
+      - .env
+      
+networks:
+  default:
+    name: WebServices
+    external: true

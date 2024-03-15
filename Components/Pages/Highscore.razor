@@ -1,4 +1,7 @@
 @rendermode InteractiveServer
+@inject MinesWeeperHighscoreApiClient HighScoreClient
+@inject UserServiceApiClient UserServiceClient
+@attribute [StreamRendering(true)]
 
 <div class="container">
 
@@ -7,7 +10,7 @@
         <div class="d-flex flex-column justify-content-center align-items-center">
             <h3>High Scores</h3>
         </div>
-        @if (HighScores == null)
+        @if (_isWaiting || _game == null)
         {
             <p>Loading...</p>
         }
@@ -15,9 +18,9 @@
         {
             <div class="row justify-content-center">
 
-                @if (_isEntered || _game.GameState != GameState.Won)
+                @if (_isEntered || _game?.GameState != GameState.Won)
                 {
-                    if (HighScores.Count == 0)
+                    if (HighScores?.ToList().Count == 0)
                     {
                         <div class="d-flex flex-column justify-content-center align-items-center">
                             <p>No high scores yet</p>
@@ -35,20 +38,20 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var highScore in HighScores)
+                                @foreach (var highScore in HighScores!.ToList())
                                 {
                                     <tr>
                                         <td>@GetRank(highScore)</td>
-                                        <td>@highScore.Name</td>
+                                        <td>@highScore.Username</td>
                                         <td>@highScore.Time.ToString(@"hh\:mm\:ss")</td>
-                                        <td>@highScore.Date?.ToString(@"dd.MM.yyyy HH:mm:ss")</td>
+                                        <td>@highScore.Date.ToString(@"dd.MM.yyyy HH:mm:ss")</td>
                                     </tr>
                                 }
                             </tbody>
                         </table>
                     }
                 }
-                @if (!_isEntered && _game.GameState == GameState.Won)
+                @if (!_isEntered && _game?.GameState == GameState.Won)
                 {
                     <p>Enter your name to add your high score</p>
                     <div class="col">
@@ -64,11 +67,12 @@
 
 
 @code {
-    [Parameter] public Game? Game { get; set; }
-    private Game _game = new Game();
-    [Parameter] public List<HighScore> HighScores { get; set; } = new List<HighScore>();
+    [Parameter] public Game? CurrentGame { get; set; }
     [Parameter] public EventCallback<List<HighScore>> HighScoresChanged { get; set; }
 
+    private IEnumerable<HighScore> HighScores { get; set; } = new List<HighScore>();
+    private ApiUser? _user;
+    private Game? _game;
     private string _name = "";
     private bool _isEntered = false;
     private bool _isWaiting = false;
@@ -77,7 +81,16 @@
     {
         await base.OnInitializedAsync();
 
-        _game = Game ?? new Game();
+        if (_user == null)
+        {
+            Console.WriteLine("--- Highscore - OnInitializedAsync ------------------------------------------------------");
+            Console.WriteLine(">>> logging in ...");
+
+            _user = await UserServiceClient.LoginUserAsync() ?? new ApiUser{Username = "unknown", Token = "invalid"};
+
+            Console.WriteLine($"User: {_user?.Username} - {_user?.Token}");
+        }
+
         _isEntered = false;
         _isWaiting = false;
         _name = "";
@@ -87,43 +100,196 @@
     {
         await base.OnParametersSetAsync();
 
-        if (Game != null && (_game.GameType != Game?.GameType || _game != Game))
+        if (CurrentGame != null && _game?.Id != CurrentGame?.Id)
         {
-            _game = Game!;
+            Console.WriteLine("--- Highscore - OnParametersSetAsync ----------------------------------------------------");
+            Console.WriteLine(">>> Game changed <<<");
+            Console.WriteLine($"Game: {_game?.Id} -> {CurrentGame?.Id}");
+
+            _game = CurrentGame;
             _isEntered = false;
             _isWaiting = false;
             _name = "";
+            await LoadHighscores();
         }
     }
 
     private int GetRank(HighScore highScore)
     {
-        if (HighScores.Count == 0)
+        if (HighScores.ToList().Count == 0)
         {
             return 1;
         }
         else
         {
-            return HighScores.IndexOf(highScore) + 1;
+            return HighScores.ToList().IndexOf(highScore) + 1;
         }
     }
 
     private async Task AddHighScore()
     {
+        if (_game == null)
+        {
+            return;
+        }
+
+        if (_isWaiting)
+        {
+            return;
+        }
+
+        _isWaiting = true;
+
+        var newHighScore = new HighScore
+        {
+            Username = _name.Length > 0 ? _name : "unknown",
+            Time = _game.Time,
+            FieldWidth = _game.GridWidth,
+            FieldHeight = _game.GridHeight,
+            MineCount = _game.MineCount,
+            Date = DateTime.Now
+        };
+
+        try
+        {
+    
+            var highScoreAdded = await HighScoreClient.AddHighscoreAsync(newHighScore, _user?.Token ?? "");
+            if (highScoreAdded != null)
+            {
+                HighScores = HighScores.Append(highScoreAdded)
+                                        .OrderBy(h => h.Time).ThenByDescending(x => x.Date)
+                                        .ToList();
+            
+                Console.WriteLine("--- Highscore - AddHighScore ------------------------------------------------------------");
+                Console.WriteLine($"New Highscore: {newHighScore.Username} - {newHighScore.Time} - {newHighScore.Date}");
+                Console.WriteLine($"Highscores: {HighScores.Count()} -> Field: {_game.GridWidth}x{_game.GridHeight} - Mines: {_game.MineCount}");
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Console.WriteLine("--- Highscore - AddHighScore ------------------------------------------------------------");
+            Console.WriteLine(">>> Not Authorized -> Logging in again");
+
+            await UserServiceClient.LogoutUserAsync(_user?.Username ?? "");
+            _user = await UserServiceClient.LoginUserAsync();
+
+            try
+            {
+                var highScoreAdded = await HighScoreClient.AddHighscoreAsync(newHighScore, _user?.Token ?? "");
+                if (highScoreAdded != null)
+                {
+                    HighScores = HighScores.Append(highScoreAdded)
+                                            .OrderBy(h => h.Time).ThenByDescending(x => x.Date)
+                                            .ToList();
+        
+                    Console.WriteLine("--- Highscore - AddHighScore ------------------------------------------------------------");
+                    Console.WriteLine($"New Highscore: {newHighScore.Username} - {newHighScore.Time} - {newHighScore.Date}");
+                    Console.WriteLine($"Highscores: {HighScores.Count()} (after relogin) -> Field: {_game.GridWidth}x{_game.GridHeight} - Mines: {_game.MineCount}");
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine(">>> still Not Authorized -> cancel Logging in ");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("--- Highscore - AddHighScore (inner) ----------------------------------------------------");
+                Console.WriteLine(">>> Exception BEGIN");
+                Console.WriteLine(e);
+                Console.WriteLine("<<< Exception END");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("--- Highscore - AddHighScore (outer) ----------------------------------------------------");
+            Console.WriteLine(">>> Exception BEGIN");
+            Console.WriteLine(e);
+            Console.WriteLine("<<< Exception END");
+        }
+        finally
+        {
+            _isEntered = true;
+            _isWaiting = false;
+        }
+    }
+
+    private async Task LoadHighscores()
+    {
+        if (_game == null)
+        {
+            return;
+        }
+
         if (_isWaiting)
         {
             return;
         }
         _isWaiting = true;
-        await HighScore.SaveHighScoreAsync(new HighScore
+
+        IEnumerable<MinesWeeper.Api.Models.HighScore>? loadedHighscores = null;
+
+        try
+        {
+            loadedHighscores = await HighScoreClient.GetHighscoresByFieldTypeAsync(new FieldType 
+                { 
+                    FieldWidth = _game.GridWidth, 
+                    FieldHeight = _game.GridHeight,
+                    MineCount = _game.MineCount
+                }, 
+                _user?.Token ?? ""
+            ) ?? new List<MinesWeeper.Api.Models.HighScore>();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Console.WriteLine("--- Highscore - LoadHighscores ----------------------------------------------------------");
+            Console.WriteLine(">>> Not Authorized -> Logging in again");
+
+            await UserServiceClient.LogoutUserAsync(_user?.Username ?? "");
+            _user = await UserServiceClient.LoginUserAsync();
+
+            try{
+                loadedHighscores = await HighScoreClient.GetHighscoresByFieldTypeAsync(new FieldType 
+                    { 
+                        FieldWidth = _game.GridWidth, 
+                        FieldHeight = _game.GridHeight,
+                        MineCount = _game.MineCount
+                    }, 
+                    _user?.Token ?? ""
+                ) ?? new List<MinesWeeper.Api.Models.HighScore>();
+            }
+            catch (UnauthorizedAccessException)
             {
-                Name = _name.Length > 0 ? _name : "unknown",
-                Time = _game.Time,
-                GameType = _game.GameType,
-                Date = DateTime.Now
-            });
-        HighScores = await HighScore.GetHighScoresAsync(_game.GameType);
-        _isEntered = true;
-        _isWaiting = false;
+                Console.WriteLine("--- Highscore - LoadHighscores (inner) --------------------------------------------------");
+                Console.WriteLine(">>> still Not Authorized -> cancel Logging in ");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("--- Highscore - LoadHighscores (inner) --------------------------------------------------");
+                Console.WriteLine(">>> Exception BEGIN");
+                Console.WriteLine(e);
+                Console.WriteLine("<<< Exception END");
+            }            
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("--- Highscore - LoadHighscores (outer) --------------------------------------------------");
+            Console.WriteLine(">>> Exception BEGIN");
+            Console.WriteLine(e);
+            Console.WriteLine("<<< Exception END");
+        }
+        finally
+        {
+            if (loadedHighscores != null)
+            {
+                HighScores = loadedHighscores.OrderBy(h => h.Time).ThenByDescending(x => x.Date).ToList();
+                Console.WriteLine("--- Highscore - LoadHighscores ----------------------------------------------------------");
+                Console.WriteLine($"Highscores: {HighScores.Count()} (after relogin) -> Field: {_game.GridWidth}x{_game.GridHeight} - Mines: {_game.MineCount}");
+            }
+            else
+            {
+                HighScores = new List<MinesWeeper.Api.Models.HighScore>();
+            }
+            _isWaiting = false;
+        }
     }
 }
